@@ -7,6 +7,7 @@ import seaborn as sns
 from sklearn import ensemble
 from sklearn import preprocessing
 from sklearn_pandas import DataFrameMapper
+import numpy as np
 
 #returns current working directory
 os.getcwd()
@@ -24,12 +25,23 @@ titanic_train.info()
 concat_df = pd.concat([titanic_train , titanic_test])
 concat_df['Pclass'] = concat_df.Pclass.astype('category',categories = [3,2,1],ordered = True)
 
+
+concat_df['Embarked'] = concat_df.Embarked.astype('category',categories = ['S','C','Q'],ordered = True)
+         
+le = preprocessing.LabelEncoder()
+le.fit(['S','C','Q'])
+le.classes_
+le.transform(['S','C','Q']) 
+
+
+         
+
 ##Ploting
 pd.crosstab(index=concat_df['Survived'], columns=concat_df['Pclass'])
-sns.factorplot(x="Survived", hue="Pclass", data=concat_df, kind="count", size=6)
+sns.factorplot(x="Pclass", hue="Embarked", data=concat_df, kind="count", size=6)
+sns.FacetGrid(titanic_train, row="Survived", col="Embarked").map(sns.countplot, "Pclass")
 
-
-titanic_all  = pd.get_dummies(concat_df, columns=['Sex', 'Embarked','Ticket','label'])
+titanic_all  = pd.get_dummies(concat_df, columns=['Sex', 'Ticket','label'])
 
 
 titanic_all1 = titanic_all.drop(['PassengerId','Age','Cabin', 'Name','Survived'], 1)
@@ -79,13 +91,19 @@ y_train = titanic_train['Survived']
 dt = tree.DecisionTreeClassifier()
 param_grid = {'max_depth':[3,4,5,6,7,8,9,10], 'min_samples_split':[2,3,4,5,6,7,8,9,10,11,12]}
 dt_grid = model_selection.GridSearchCV(dt, param_grid, cv=10, n_jobs=5)
-dt_grid.fit(titanic_train2, y_train)
+dt_grid.fit(titanic_train1, y_train)
 dt_grid.grid_scores_
 dt_grid.best_estimator_
 dt_grid.best_score_
 dt_grid.score(titanic_train2, y_train)
 
-titanic_test2 = pd.DataFrame(pca.transform(titanic_test1))
+mapper = DataFrameMapper([(titanic_test1.columns, preprocessing.StandardScaler())])
+scaled_features = mapper.fit_transform(titanic_test1)
+type(scaled_features)
+titanic_test_999 = pd.DataFrame(scaled_features, columns=titanic_test1.columns)
 
-titanic_test['Survived'] = dt_grid.predict(titanic_test2)
+
+titanic_test2 = pd.DataFrame(pca.transform(titanic_test_999))
+
+titanic_test['Survived'] = rf_grid_estimator.predict(titanic_test2)
 titanic_test.to_csv("submission.csv", columns=['PassengerId','Survived'], index=False)
