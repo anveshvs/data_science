@@ -28,7 +28,7 @@ concat_df.Embarked[concat_df['Embarked'].isnull()] = 'S'
 
 concat_df['Embarked'] = LabelEncoder().fit_transform(concat_df['Embarked'])
 
-concat_df['Embarked'] = concat_df.Embarked.astype('category',categories = [2,1,0],ordered = True)
+concat_df['Embarked'] = concat_df.Embarked.astype('category',categories = [0,1,2],ordered = True)
 
 #concat_df['Embarked'] = concat_df.Embarked.astype('category',categories = ['S','C','Q'],ordered = True)
 #         
@@ -109,5 +109,5 @@ titanic_test_999 = pd.DataFrame(scaled_features, columns=titanic_test1.columns)
 
 titanic_test2 = pd.DataFrame(pca.transform(titanic_test_999))
 
-titanic_test1['Survived'] = dt_grid.predict(titanic_train1)
-titanic_test1.to_csv("submission.csv", columns=['PassengerId','Survived'], index=False)
+titanic_test['Survived'] = dt_grid.predict(titanic_test1)
+titanic_test.to_csv("submission.csv", columns=['PassengerId','Survived'], index=False)
