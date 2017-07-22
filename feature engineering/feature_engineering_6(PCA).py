@@ -8,6 +8,7 @@ from sklearn import ensemble
 from sklearn import preprocessing
 from sklearn_pandas import DataFrameMapper
 import numpy as np
+from sklearn.preprocessing import LabelEncoder
 
 #returns current working directory
 os.getcwd()
@@ -18,28 +19,31 @@ titanic_train['label'] = 'train'
 titanic_test = pd.read_csv("test.csv")
 titanic_test['label'] = 'test'
 
-titanic_train.info()
-
-
 
 concat_df = pd.concat([titanic_train , titanic_test])
 concat_df['Pclass'] = concat_df.Pclass.astype('category',categories = [3,2,1],ordered = True)
 
+concat_df.Embarked[concat_df['Embarked'].isnull()] = 'S'
 
-concat_df['Embarked'] = concat_df.Embarked.astype('category',categories = ['S','C','Q'],ordered = True)
-         
-le = preprocessing.LabelEncoder()
-le.fit(['S','C','Q'])
-le.classes_
-le.transform(['S','C','Q']) 
+
+concat_df['Embarked'] = LabelEncoder().fit_transform(concat_df['Embarked'])
+
+concat_df['Embarked'] = concat_df.Embarked.astype('category',categories = [2,1,0],ordered = True)
+
+#concat_df['Embarked'] = concat_df.Embarked.astype('category',categories = ['S','C','Q'],ordered = True)
+#         
+#le = preprocessing.LabelEncoder()
+#le.fit(['S','C','Q'])
+#le.classes_
+#le.transform(['S','C','Q']) 
 
 
          
 
 ##Ploting
 pd.crosstab(index=concat_df['Survived'], columns=concat_df['Pclass'])
-sns.factorplot(x="Pclass", hue="Embarked", data=concat_df, kind="count", size=6)
-sns.FacetGrid(titanic_train, row="Survived", col="Embarked").map(sns.countplot, "Pclass")
+sns.factorplot(x="Survived", hue="Embarked", data=concat_df, kind="count", size=6)
+sns.FacetGrid(titanic_train, row="Survived", col="Embarked").map(sns.countplot, "Sex")
 
 titanic_all  = pd.get_dummies(concat_df, columns=['Sex', 'Ticket','label'])
 
@@ -95,7 +99,7 @@ dt_grid.fit(titanic_train1, y_train)
 dt_grid.grid_scores_
 dt_grid.best_estimator_
 dt_grid.best_score_
-dt_grid.score(titanic_train2, y_train)
+dt_grid.score(titanic_train1, y_train)
 
 mapper = DataFrameMapper([(titanic_test1.columns, preprocessing.StandardScaler())])
 scaled_features = mapper.fit_transform(titanic_test1)
@@ -105,5 +109,5 @@ titanic_test_999 = pd.DataFrame(scaled_features, columns=titanic_test1.columns)
 
 titanic_test2 = pd.DataFrame(pca.transform(titanic_test_999))
 
-titanic_test['Survived'] = rf_grid_estimator.predict(titanic_test2)
-titanic_test.to_csv("submission.csv", columns=['PassengerId','Survived'], index=False)
+titanic_test1['Survived'] = dt_grid.predict(titanic_train1)
+titanic_test1.to_csv("submission.csv", columns=['PassengerId','Survived'], index=False)
