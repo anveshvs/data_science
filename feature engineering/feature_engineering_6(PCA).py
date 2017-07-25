@@ -66,7 +66,7 @@ titanic_all_999 = pd.DataFrame(scaled_features, columns=titanic_train1.columns)
 
 
 
-pca = decomposition.PCA(n_components=680)
+pca = decomposition.PCA(n_components=679)
 pca.fit(titanic_all_999)
 explainedVariance = pca.explained_variance_
 varianceRatio = pca.explained_variance_ratio_
@@ -77,25 +77,26 @@ titanic_train2 = pd.DataFrame(pca.transform(titanic_all_999))
 #X_train = titanic_train1.drop(['PassengerId','Age','Cabin', 'Name','Survived'], 1)
 y_train = titanic_train['Survived']
 
-#rf_estimator = ensemble.RandomForestClassifier(random_state=2017)
-#rf_grid = {'n_estimators':list(range(50,500,50)),'max_features':[3,4,5,6,7,8,9],'criterion':['entropy','gini']}
-#rf_grid_estimator = model_selection.GridSearchCV(rf_estimator,rf_grid, cv=10, n_jobs=10)
-#rf_grid_estimator.fit(titanic_train2, y_train)
-##featureImp = pd.DataFrame({'cols' : X_train.columns, 'Imp_ab' :list(rf_grid_estimator.best_estimator_.feature_importances_)})
-##featureImp.sort_values(by='Imp_ab',ascending=False,inplace = True)
-#rf_grid_estimator.grid_scores_
-#rf_grid_estimator.best_estimator_
-#print("CvScore",rf_grid_estimator.best_score_)
-#rf_grid_estimator.best_estimator_.feature_importances_
-#print("Train accuracy",rf_grid_estimator.score(titanic_train2, y_train))
+rf_estimator = ensemble.RandomForestClassifier()
+rf_grid = {'n_estimators':list(range(100,500,100))}
+rf_grid_estimator = model_selection.GridSearchCV(rf_estimator,rf_grid, cv=10, n_jobs=10)
+rf_grid_estimator.fit(titanic_train2, y_train)
+#featureImp = pd.DataFrame({'cols' : X_train.columns, 'Imp_ab' :list(rf_grid_estimator.best_estimator_.feature_importances_)})
+#featureImp.sort_values(by='Imp_ab',ascending=False,inplace = True)
+rf_grid_estimator.grid_scores_
+rf_grid_estimator.best_estimator_
+print("CvScore",rf_grid_estimator.best_score_)
+rf_grid_estimator.best_estimator_.feature_importances_
+print("Train accuracy",rf_grid_estimator.score(titanic_train2, y_train))
 
 
 
 
 dt = tree.DecisionTreeClassifier()
-param_grid = {'max_depth':[3,4,5,6,7,8,9,10], 'min_samples_split':[2,3,4,5,6,7,8,9,10,11,12]}
+param_grid = {'max_depth':[3,4,5,6,7,8,9,10], 'min_samples_split':[2,3,4,5,6,7,8,9,10],'criterion':["gini","entropy"]}
 dt_grid = model_selection.GridSearchCV(dt, param_grid, cv=10, n_jobs=5)
 dt_grid.fit(titanic_train1, y_train)
+dt_grid.best_params_
 dt_grid.grid_scores_
 dt_grid.best_estimator_
 dt_grid.best_score_
