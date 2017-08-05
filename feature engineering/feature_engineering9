@@ -5,6 +5,7 @@ from sklearn import model_selection
 from sklearn import decomposition
 import seaborn as sns
 from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble  import RandomForestRegressor
 from sklearn import ensemble
 
 #returns current working directory
@@ -25,7 +26,7 @@ concat_df['Pclass'] = concat_df.Pclass.astype('category',categories = [3,2,1],or
 
 ##Ploting
 #pd.crosstab(index=concat_df['Survived'], columns=concat_df['Pclass'])
-#sns.factorplot(x="Survived", hue="Pclass", data=concat_df, kind="count", size=6)
+#sns.factorplot(x="Survived", hue="Title", data=concat_df, kind="count", size=6)
 ###
 
 
@@ -36,6 +37,22 @@ def extract_title(df):
     return temp[0].strip()
 
 concat_df['Title'] = concat_df.apply(extract_title, axis = 1)
+
+#process names of passengers
+title_Dictionary = {
+                        "Capt":       "Officer", "Col":        "Officer",
+                        "Major":      "Officer", "Jonkheer":   "Royalty",
+                        "Don":        "Royalty", "Sir" :       "Royalty",
+                        "Dr":         "Officer", "Rev":        "Officer",
+                        "the Countess":"Royalty","Dona":       "Royalty",
+                        "Mme":        "Mrs", "Mlle":       "Miss",
+                        "Ms":         "Mrs", "Mr" :        "Mr",
+                        "Mrs" :       "Mrs", "Miss" :      "Miss",
+                        "Master" :    "Master", "Lady" :      "Royalty"
+}
+concat_df['Title'] = concat_df['Title'].map(title_Dictionary)
+
+
 titanic_all_age  = pd.get_dummies(concat_df, columns=['Sex', 'Embarked','Title'])
 
 #titles = titanic_all_age['Title'].unique()
@@ -60,13 +77,14 @@ X_train_age = age_train.drop(['Age'], 1)
 y_train_age = age_train['Age']
 
 
-def fill_age(dt_regr,X_test_age):
+def fill_age(dt_regr,rf_regr,X_test_age):
 #    print('X_train_age',X_train_age.shape)
 #    print('y_train_age',y_train_age.shape)
 #    print('X_test_age',X_test_age.shape)
 #    dt_regr = DecisionTreeRegressor(max_depth=10)
 #    dt_regr.fit(X_train_age, y_train_age)
-    X_test_age['Age'] = dt_regr.predict(X_test_age)
+    mean_age = rf_regr.predict(X_test_age)+dt_regr.predict(X_test_age)
+    X_test_age['Age'] = mean_age/2
     return X_test_age
 
 
@@ -82,19 +100,6 @@ def size_to_type(x):
     else: 
         return 'Large'
 
-#process names of passengers
-title_Dictionary = {
-                        "Capt":       "Officer", "Col":        "Officer",
-                        "Major":      "Officer", "Jonkheer":   "Royalty",
-                        "Don":        "Royalty", "Sir" :       "Royalty",
-                        "Dr":         "Officer", "Rev":        "Officer",
-                        "the Countess":"Royalty","Dona":       "Royalty",
-                        "Mme":        "Mrs", "Mlle":       "Miss",
-                        "Ms":         "Mrs", "Mr" :        "Mr",
-                        "Mrs" :       "Mrs", "Miss" :      "Miss",
-                        "Master" :    "Master", "Lady" :      "Royalty"
-}
-concat_df['Title'] = concat_df['Title'].map(title_Dictionary)
 
 
 concat_df['FamilySize'] = concat_df.SibSp + concat_df.Parch + 1
@@ -109,7 +114,7 @@ titanic_all1 = titanic_all.drop(['PassengerId','Cabin', 'Name','Survived'], 1)
 
 #titanic_all1.Embarked[titanic_all1['Embarked'].isnull()] = 'S'
 titanic_all1.Fare[titanic_all1['Fare'].isnull()] = titanic_all1['Fare'].mean()
-titanic_all1['','']
+
 
 print('X_train_age',X_train_age.shape)
 print('y_train_age',y_train_age.shape)
@@ -117,7 +122,10 @@ print('X_test_age',X_test_age.shape)
 dt_regr = DecisionTreeRegressor(max_depth=10)
 dt_regr.fit(X_train_age, y_train_age)
 
-titanic_all1.loc[(titanic_all1.Age.isnull()), 'Age'] = fill_age(dt_regr,X_test_age)
+rf_regr = RandomForestRegressor(max_depth=10)
+rf_regr.fit(X_train_age, y_train_age)
+
+titanic_all1.loc[(titanic_all1.Age.isnull()), 'Age'] = fill_age(dt_regr,rf_regr,X_test_age)
 
 
 
@@ -138,7 +146,7 @@ y_train = titanic_train['Survived']
 
 
 rf_estimator = ensemble.RandomForestClassifier()
-rf_grid = {'max_depth':[3,4,5,6,7,8,9,10,11,12,13,14],'n_estimators':list(range(100,1000,100))}
+rf_grid = {'max_depth':[3,4,5,6,7,8,9,10,11,12],'n_estimators':list(range(100,1000,100))}
 rf_grid_estimator = model_selection.GridSearchCV(rf_estimator,rf_grid, cv=10, n_jobs=10)
 rf_grid_estimator.fit(titanic_train1, y_train)
 #featureImp = pd.DataFrame({'cols' : X_train.columns, 'Imp_ab' :list(rf_grid_estimator.best_estimator_.feature_importances_)})
@@ -153,7 +161,7 @@ print("Train accuracy",rf_grid_estimator.score(titanic_train1, y_train))
 
 
 dt = tree.DecisionTreeClassifier()
-param_grid = {'max_depth':[3,4,5,6,7,8,9,10], 'min_samples_split':[2,3,4,5,6,7,8,9,10,11,12]}
+param_grid = {'max_depth':[3,4,5,6,7], 'min_samples_split':[2,3,4,5,6,7,8,9,10,11,12]}
 dt_grid = model_selection.GridSearchCV(dt, param_grid, cv=10, n_jobs=5)
 dt_grid.fit(titanic_train1, y_train)
 dt_grid.best_params_
