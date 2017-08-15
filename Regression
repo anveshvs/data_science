@@ -201,18 +201,18 @@ dot_data = io.StringIO()
 tree.export_graphviz(dt_estimator, out_file = dot_data, feature_names = X_train.columns)
 graph = pydot.graph_from_dot_data(dot_data.getvalue())[0] 
 graph.write_pdf("reg-tree1.pdf")
+
+#mapper = DataFrameMapper([(titanic_test1.columns, preprocessing.StandardScaler())])
+#scaled_features = mapper.fit_transform(titanic_test1)
+#type(scaled_features)
+#titanic_test_999 = pd.DataFrame(scaled_features, columns=titanic_test1.columns)
+#
+#
+#titanic_test2 = pd.DataFrame(pca.transform(titanic_test_999))
+
+
 X_test = house_test1
-
-mapper = DataFrameMapper([(X_test.columns, preprocessing.StandardScaler())])
-scaled_features = mapper.fit_transform(X_test)
-type(scaled_features)
-titanic_test_999 = pd.DataFrame(scaled_features, columns=X_test.columns)
-
-
-X_test2 = pd.DataFrame(pca.transform(titanic_test_999))
-
-
-log_sales_price = dt_estimator.predict(X_test2)
+log_sales_price = dt_estimator.predict(X_test)
 house_test['SalePrice'] = np.exp(log_sales_price)
 house_test.to_csv("submission.csv", columns=['Id','SalePrice'], index=False)
 
