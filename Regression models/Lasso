@@ -1,0 +1,216 @@
+import os
+import pandas as pd
+import numpy as np
+from sklearn import datasets, linear_model
+from sklearn import model_selection
+import math
+from sklearn import metrics
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.feature_selection import SelectFromModel
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.preprocessing import LabelEncoder
+import pandas as pd
+import scipy.stats.stats as stats
+
+
+os.getcwd()
+#changes working directory
+os.chdir('C:/Projects/DataScience/House_pricing')
+house_train = pd.read_csv("train_house.csv")
+house_test = pd.read_csv("test_house.csv")
+house_train.info()
+house_train.shape
+##Droping of some outlier rows.
+house_data = pd.concat([house_train, house_test],ignore_index=True)
+
+house_data.drop(['Id','Condition2','LandContour','MasVnrArea','Exterior2nd','BsmtCond','LowQualFinSF','BsmtHalfBath'
+                 ,'BsmtFinType2','BsmtFinSF2','Heating','FireplaceQu','GarageFinish','GarageCars','OpenPorchSF',
+                'PoolQC','GarageQual','GarageCond','3SsnPorch','MiscVal','MiscFeature','PoolArea','Fence'
+                ,'GarageType'], axis=1, inplace=True)
+##Converting continuous to categorical
+for col in ['MSSubClass','MoSold','YrSold','GarageYrBlt','Fireplaces','CentralAir','Electrical',
+                           'TotRmsAbvGrd','KitchenAbvGr','BedroomAbvGr','YearBuilt']:
+    house_data[col] = house_data[col].astype('category')
+    
+cov = np.cov(house_train['BsmtFinSF1'],house_train['SalePrice'])
+
+#ordinal_features1 = [col for col in house_train if 'TA' in list(house_train[col])]
+#house_mszoning = {None: 0, "C": 4, "FV": 8, "RH": 6, "RL": 7, "RP": 3,"RM":5,"A":2,"I":1}
+#house_data["MSZoning"] = house_data["MSZoning"].map(house_mszoning)
+
+#house_pavedDrive = {None: 0, "Y": 3, "P": 2, "N": 1}
+#house_data["PavedDrive"] = house_data["PavedDrive"].map(house_pavedDrive)
+
+#house_garageFinish = {None: 0, "Fin": 3, "RFn": 2, "Unf": 1,"NA":0}
+#house_data["GarageFinish"] = house_data["GarageFinish"].map(house_garageFinish)
+#
+#house_electrical = {None: 0, "SBrkr": 5, "FuseA": 4, "FuseF": 3,"FuseP":2,"Mix":1}
+#house_data["Electrical"] = house_data["Electrical"].map(house_electrical)
+
+def impute_category(column, value):
+    house_data.loc[house_data[column].isnull(),column] = value
+                   
+def impute_continous(column):
+    house_data.loc[house_data[column].isnull(),column] = house_data[column].median()
+
+def impute_zero_continous(column):
+    house_data.loc[house_data[column].isnull(),column] = 0
+    
+numeric_cols = house_data.select_dtypes(include=['number']).columns
+cat_cols = house_data.select_dtypes(exclude = ['number']).columns
+                                   
+             
+impute_category('BsmtQual','None')       
+impute_category('MasVnrType','None')  
+#impute_category('GarageQual','None')      
+#impute_category('GarageCond','None')
+
+impute_zero_continous('BsmtFinSF1')
+#impute_zero_continous('BsmtFinSF2')
+#impute_zero_continous('BsmtFullBath')
+#impute_zero_continous('BsmtHalfBath')
+impute_zero_continous('BsmtUnfSF')
+impute_zero_continous('TotalBsmtSF')
+house_data['SaleType'] = house_data['SaleType'].fillna(house_data['SaleType'].mode()[0])
+house_data['Electrical'] = house_data['Electrical'].fillna(house_data['Electrical'].mode()[0])
+house_data['KitchenQual'] = house_data['KitchenQual'].fillna(house_data['KitchenQual'].mode()[0])
+house_data['Exterior1st'] = house_data['Exterior1st'].fillna(house_data['Exterior1st'].mode()[0])
+house_data['GarageYrBlt'] = house_data['GarageYrBlt'].fillna(house_data['GarageYrBlt'].mode()[0])
+#house_data['Exterior2nd'] = house_data['Exterior2nd'].fillna(house_data['Exterior2nd'].mode()[0])
+
+impute_zero_continous('GarageArea')
+#impute_category('GarageCars','None')
+
+#impute_zero_continous('MasVnrArea')
+
+#impute_category('Fence','None')
+#impute_category('MiscFeature','None')
+#impute_category('PoolQC','None')
+#impute_category('FireplaceQu','None')
+impute_category('MSZoning','None')
+impute_category('Exterior1st','None')
+#impute_category('Exterior2nd','None')
+impute_category('Functional','None')
+impute_category('SaleType','None')
+impute_category('Utilities','None')
+#impute_category('Heating','None')
+impute_category('MasVnrType','None')                    
+
+##convert categorical columns to numeric type
+#ordinal_features1 = ["ExterQual", "ExterCond", "BsmtQual", "BsmtCond", "GarageQual", "GarageCond", "PoolQC", "FireplaceQu", "KitchenQual", "HeatingQC"]
+##ordinal_features1 = [col for col in house_train if 'TA' in list(house_train[col])]
+#quality_dict = {None: 0, "Po": 1, "Fa": 2, "TA": 3, "Gd": 4, "Ex": 5}
+#for feature in ordinal_features1:
+#    null_idx = house_data[feature].isnull()
+#    house_data.loc[null_idx, feature] = None 
+#    house_data[feature] = house_data[feature].map(quality_dict)
+
+# Adding total sqfootage feature 
+house_data['TotalSF'] = house_data['TotalBsmtSF'] + house_data['1stFlrSF'] + house_data['2ndFlrSF']
+
+cols = ( 'Electrical','MSZoning','BsmtQual','BldgType','Foundation','Foundation',
+        'HouseStyle','MasVnrType','RoofStyle','YearBuilt','PavedDrive',
+        'ExterQual', 'ExterCond','HeatingQC', 'KitchenQual', 'BsmtFinType1', 
+         'Functional', 'BsmtExposure','LandSlope','GarageYrBlt',
+        'LotShape', 'PavedDrive', 'Street', 'CentralAir', 'MSSubClass', 'OverallCond', 
+        'YrSold', 'MoSold')
+# process columns, apply LabelEncoder to categorical features
+for c in cols:
+    lbl = LabelEncoder() 
+    lbl.fit(list(house_data[c].values)) 
+    house_data[c] = lbl.transform(list(house_data[c].values))
+
+# shape        
+print('Shape house_data: {}'.format(house_data.shape))
+    
+house_data['KitchenAbvGr'].dtypes    
+##Skewed features
+numeric_feats = house_data.dtypes[(house_data.dtypes != "object") & (house_data.dtypes!="category")].index
+
+# Check the skew of all numerical features
+skewed_feats = house_data[numeric_feats].apply(lambda x: stats.skew(x.dropna())).sort_values(ascending=False)
+print("\nSkew in numerical features: \n")
+skewness = pd.DataFrame({'Skew' :skewed_feats})
+
+
+skewness = skewness[abs(skewness) > 0.75]
+print("There are {} skewed numerical features to Box Cox transform".format(skewness.shape[0]))
+
+from scipy.special import boxcox1p
+skewed_features = skewness.index
+lamda = 0.15
+for feat in skewed_features:
+    #all_data[feat] += 1
+    house_data[feat] = boxcox1p(house_data[feat], lamda)
+    print(feat)
+
+total_missing = house_data.isnull().sum()
+to_delete = total_missing[total_missing>0]
+house_data.drop(list(to_delete.index), axis=1, inplace=True)
+house_data.info()
+
+numeric_cols = house_data.select_dtypes(include=['number']).columns
+cat_cols = house_data.select_dtypes(exclude = ['number']).columns
+house_data1 = pd.get_dummies(house_data, columns=cat_cols)
+house_train1 = house_data1[:house_train.shape[0]]
+house_test1 = house_data1[house_train.shape[0]:]
+house_train['log_sale_price'] = np.log(house_train['SalePrice'])
+house_train.info()
+
+
+
+
+X_train = house_train1
+
+y_train = house_train['log_sale_price']
+total_missing = y_train.isnull().sum()
+house_train1.info()
+house_train1.shape
+
+X_train.info()
+
+from sklearn.preprocessing import  RobustScaler
+robust_scaler = RobustScaler()
+Xtrain_1 = robust_scaler.fit_transform(X_train)
+
+
+
+lass=linear_model.Lasso(alpha =0.0005, random_state=1)
+lass.fit(Xtrain_1,y_train)
+#print(math.sqrt(-lass.best_score_))
+print(math.sqrt(-lass.score(X_train,y_train)))
+
+#lassocv = linear_model.LassoCV(alphas = [0.0008])
+#lasso_param_grid= dict(max_iter = range(100,1500,100))
+#lasso_grid_estimator = model_selection.GridSearchCV(lassocv,lasso_param_grid,scoring="neg_mean_squared_error",n_jobs = 10,verbose = 2,cv =10)
+#lasso_grid_estimator.fit(X_train,y_train)
+#print(lasso_grid_estimator.best_params_)
+#paramaters =lasso_grid_estimator.get_params(deep=True)
+
+#lasso_grid_estimator.feature_importances_
+#print(lasso_grid_estimator.best_estimator_)
+#print(math.sqrt(-lasso_grid_estimator.best_score_))
+#print(math.sqrt(-lasso_grid_estimator.score(X_train,y_train)))
+
+
+
+
+print("r2 deviation",model_selection.cross_val_score(lass, X_train, y_train, cv=10,scoring="r2").mean())
+
+#evaluate using rmse - 1
+res = model_selection.cross_val_score(lass, X_train, y_train, cv=10,scoring="neg_mean_squared_error").mean()
+print("RMSE Default",math.sqrt(-res))
+
+
+
+X_test = house_test1
+X_test_1 = robust_scaler.transform(X_test)
+#X_test1= X_test[lasso_features]
+log_sales_price = lass.predict(X_test_1)
+house_test['SalePrice'] = np.exp(log_sales_price)
+
+#house_test['Survived'] = dt_estimator.predict(house_test)
+house_test.to_csv("submission.csv", columns=['Id','SalePrice'], index=False)
+
+
