@@ -27,7 +27,7 @@ house_data = pd.concat([house_train, house_test],ignore_index=True)
 house_data.drop(['Id','Condition2','LandContour','MasVnrArea','Exterior2nd','BsmtCond','LowQualFinSF','BsmtHalfBath'
                  ,'BsmtFinType2','BsmtFinSF2','Heating','FireplaceQu','GarageFinish','GarageCars','OpenPorchSF',
                 'PoolQC','GarageQual','GarageCond','3SsnPorch','MiscVal','MiscFeature','PoolArea','Fence'
-                ,'GarageType'], axis=1, inplace=True)
+                ,'GarageType','RoofStyle','HouseStyle','Alley','LotFrontage'], axis=1, inplace=True)
 ##Converting continuous to categorical
 for col in ['MSSubClass','MoSold','YrSold','GarageYrBlt','Fireplaces','CentralAir','Electrical',
                            'TotRmsAbvGrd','KitchenAbvGr','BedroomAbvGr','YearBuilt']:
@@ -77,7 +77,7 @@ house_data['Electrical'] = house_data['Electrical'].fillna(house_data['Electrica
 house_data['KitchenQual'] = house_data['KitchenQual'].fillna(house_data['KitchenQual'].mode()[0])
 house_data['Exterior1st'] = house_data['Exterior1st'].fillna(house_data['Exterior1st'].mode()[0])
 house_data['GarageYrBlt'] = house_data['GarageYrBlt'].fillna(house_data['GarageYrBlt'].mode()[0])
-#house_data['Exterior2nd'] = house_data['Exterior2nd'].fillna(house_data['Exterior2nd'].mode()[0])
+house_data['BsmtFullBath'] = house_data['BsmtFullBath'].fillna(house_data['BsmtFullBath'].mode()[0])
 
 impute_zero_continous('GarageArea')
 #impute_category('GarageCars','None')
@@ -110,7 +110,7 @@ impute_category('MasVnrType','None')
 house_data['TotalSF'] = house_data['TotalBsmtSF'] + house_data['1stFlrSF'] + house_data['2ndFlrSF']
 
 cols = ( 'Electrical','MSZoning','BsmtQual','BldgType','Foundation','Foundation',
-        'HouseStyle','MasVnrType','RoofStyle','YearBuilt','PavedDrive',
+        'MasVnrType','YearBuilt','PavedDrive',
         'ExterQual', 'ExterCond','HeatingQC', 'KitchenQual', 'BsmtFinType1', 
          'Functional', 'BsmtExposure','LandSlope','GarageYrBlt',
         'LotShape', 'PavedDrive', 'Street', 'CentralAir', 'MSSubClass', 'OverallCond', 
@@ -212,5 +212,6 @@ house_test['SalePrice'] = np.exp(log_sales_price)
 
 #house_test['Survived'] = dt_estimator.predict(house_test)
 house_test.to_csv("submission.csv", columns=['Id','SalePrice'], index=False)
-
+#r2 deviation 0.900299525498
+#RMSE Default 0.12558369878813355
 
