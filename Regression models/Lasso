@@ -213,5 +213,5 @@ house_test['SalePrice'] = np.exp(log_sales_price)
 #house_test['Survived'] = dt_estimator.predict(house_test)
 house_test.to_csv("submission.csv", columns=['Id','SalePrice'], index=False)
 #r2 deviation 0.900299525498
-#RMSE Default 0.12558369878813355
+#RMSE Default 0.12558369878813355(kggle:0.12041)
 
