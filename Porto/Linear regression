@@ -1,0 +1,30 @@
+import os
+import pandas as pd
+os.getcwd()
+#changes working directory
+          
+os.chdir('C:/Projects/DataScience/porto_seguro')
+proto_train = pd.read_csv("proto_train.csv")
+proto_test = pd.read_csv("proto_test.csv")
+
+proto_train.info()
+proto_train.shape
+proto_test.shape
+proto_train.head()
+
+id_test = proto_test['id'].values
+proto_test = proto_test.drop('id',axis=1)
+
+y_train = proto_train['target']
+X_train = proto_train.drop('target',axis=1)
+X_train = X_train.drop('id',axis=1)
+
+from sklearn.linear_model import LinearRegression
+logmodel = LinearRegression()
+logmodel.fit(X_train,y_train)
+pred = logmodel.predict(proto_test)
+sub = pd.DataFrame()
+sub['id'] = id_test
+sub['target'] = pred
+sub.loc[sub['target']<0, 'target']=0
+sub.to_csv('proto_sample_submission.csv',index=False)
